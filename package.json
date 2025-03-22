@@ -71,6 +71,8 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.682.0",
+		"@octokit/webhooks-schemas": "^7.6.1",
+		"@octokit/webhooks-types": "^7.6.1",
 		"@sentry/node": "^8.35.0",
 		"ajv": "^8.17.1",
 		"ajv-formats": "^3.0.1",

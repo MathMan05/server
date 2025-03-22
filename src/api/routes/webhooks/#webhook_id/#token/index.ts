@@ -70,7 +70,6 @@ const messageUpload = multer({
 	},
 	storage: multer.memoryStorage(),
 }); // max upload 50 mb
-
 // https://discord.com/developers/docs/resources/webhook#execute-webhook
 // TODO: GitHub/Slack compatible hooks
 router.post(
