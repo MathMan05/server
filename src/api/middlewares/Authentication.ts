@@ -23,6 +23,8 @@ import { HTTPError } from "lambert-server";
 export const NO_AUTHORIZATION_ROUTES = [
 	// Authentication routes
 	"POST /auth/login",
+	"POST /auth/passwordless/start",
+	"POST /auth/conditional/finish",
 	"POST /auth/register",
 	"GET /auth/location-metadata",
 	"POST /auth/mfa/",

@@ -1,17 +1,17 @@
 /*
 	Spacebar: A FOSS re-implementation and extension of the Discord.com backend.
 	Copyright (C) 2023 Spacebar and Spacebar Contributors
-	
+
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU Affero General Public License as published
 	by the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version.
-	
+
 	This program is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU Affero General Public License for more details.
-	
+
 	You should have received a copy of the GNU Affero General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
@@ -21,7 +21,7 @@ import { generateToken, SecurityKey, User, verifyWebAuthnToken, WebAuthn } from 
 import { Request, Response, Router } from "express";
 import { ExpectedAssertionResult } from "fido2-lib";
 import { HTTPError } from "lambert-server";
-import { WebAuthnTotpSchema } from "@spacebar/schemas";
+import { WebAuthnSSOSchema } from "@spacebar/schemas";
 const router = Router({ mergeParams: true });
 
 function toArrayBuffer(buf: Buffer) {
@@ -36,7 +36,7 @@ function toArrayBuffer(buf: Buffer) {
 router.post(
 	"/",
 	route({
-		requestBody: "WebAuthnTotpSchema",
+		requestBody: "WebAuthnSSOSchema",
 		responses: {
 			200: { body: "TokenResponse" },
 			400: { body: "APIErrorResponse" },
@@ -48,22 +48,12 @@ router.post(
 			throw new Error("WebAuthn not enabled");
 		}
 
-		const { code, ticket } = req.body as WebAuthnTotpSchema;
-
-		const user = await User.findOneOrFail({
-			where: {
-				totp_last_ticket: ticket,
-			},
-			select: ["id"],
-			relations: ["settings"],
-		});
+		const { credential, ticket } = req.body as WebAuthnSSOSchema;
 
 		const ret = await verifyWebAuthnToken(ticket);
 		if (!ret) throw new HTTPError(req.t("auth:login.INVALID_TOTP_CODE"), 60008);
 
-		await User.update({ id: user.id }, { totp_last_ticket: "" });
-
-		const clientAttestationResponse = JSON.parse(code);
+		const clientAttestationResponse = JSON.parse(credential);
 
 		if (!clientAttestationResponse.rawId) throw new HTTPError("Missing rawId", 400);
 
@@ -76,7 +66,7 @@ router.post(
 		});
 
 		const assertionExpectations: ExpectedAssertionResult = JSON.parse(Buffer.from(clientAttestationResponse.response.clientDataJSON, "base64").toString());
-
+		console.log(securityKey, clientAttestationResponse, assertionExpectations);
 		const authnResult = await WebAuthn.fido2.assertionResult(clientAttestationResponse, {
 			...assertionExpectations,
 			factor: "second",
@@ -90,11 +80,12 @@ router.post(
 		securityKey.counter = counter;
 
 		await securityKey.save();
-
+		/*
 		return res.json({
 			token: await generateToken(user.id),
 			user_settings: user.settings,
 		});
+		*/
 	},
 );
 

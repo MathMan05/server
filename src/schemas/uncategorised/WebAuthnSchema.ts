@@ -28,11 +28,14 @@ export interface CreateWebAuthnCredentialSchema {
 	ticket: string;
 }
 
-export type WebAuthnPostSchema =
-	| GenerateWebAuthnCredentialsSchema
-	| CreateWebAuthnCredentialSchema;
+export type WebAuthnPostSchema = GenerateWebAuthnCredentialsSchema | CreateWebAuthnCredentialSchema | {};
 
 export interface WebAuthnTotpSchema {
 	code: string;
+	gift_code_sku_id?: null;
+	ticket: string;
+}
+export interface WebAuthnSSOSchema {
+	credential: string;
 	ticket: string;
 }
