@@ -676,6 +676,25 @@ export async function onIdentify(this: WebSocket, data: Payload) {
 		};
 	});
 
+	const friends = (
+		await Promise.all(
+			d.relationships?.map(async (r) => {
+				const session = (await Session.find({ where: { user_id: r.id } })).at(0);
+				return session ? ([session, r.user] as const) : session;
+			}) || [],
+		)
+	)
+		.filter((_) => _ !== undefined)
+		.map(([session, user]) => {
+			return {
+				user,
+				activities: session.activities,
+				client_status: session?.client_status,
+				status: session.getPublicStatus(),
+			};
+		});
+	console.log(friends, this.capabilities);
+
 	// TODO: ready supplemental
 	await Send(this, {
 		op: OPCodes.DISPATCH,
@@ -684,7 +703,7 @@ export async function onIdentify(this: WebSocket, data: Payload) {
 		d: {
 			merged_presences: {
 				guilds: [],
-				friends: [],
+				friends,
 			},
 			// these merged members seem to be all users currently in vc in your guilds
 			merged_members: [],
