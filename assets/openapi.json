@@ -69,7 +69,10 @@
                         "type": "string"
                     },
                     "name_localizations": {
-                        "$ref": "#/components/schemas/Record<string,string>"
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
                     },
                     "name_localized": {
                         "type": "string",
@@ -79,7 +82,10 @@
                         "type": "string"
                     },
                     "description_localizations": {
-                        "$ref": "#/components/schemas/Record<string,string>"
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
                     },
                     "description_localized": {
                         "type": "string",
@@ -2502,6 +2508,9 @@
                             "$ref": "#/components/schemas/Webhook"
                         }
                     },
+                    "member_count": {
+                        "type": "integer"
+                    },
                     "roles": {
                         "type": "array",
                         "items": {
@@ -2588,9 +2597,6 @@
                         "type": "integer"
                     },
                     "max_video_channel_users": {
-                        "type": "integer"
-                    },
-                    "member_count": {
                         "type": "integer"
                     },
                     "presence_count": {
@@ -6748,6 +6754,12 @@
                     "channel": {
                         "$ref": "#/components/schemas/Channel"
                     },
+                    "thread_id": {
+                        "type": "string"
+                    },
+                    "thread": {
+                        "$ref": "#/components/schemas/Channel"
+                    },
                     "guild_id": {
                         "type": "string"
                     },
@@ -7110,6 +7122,18 @@
                     "default_thread_rate_limit_per_user": {
                         "type": "integer",
                         "default": 0
+                    },
+                    "thread_metadata": {
+                        "$ref": "#/components/schemas/threadMetadata"
+                    },
+                    "member_count": {
+                        "type": "integer"
+                    },
+                    "message_count": {
+                        "type": "integer"
+                    },
+                    "total_message_sent": {
+                        "type": "integer"
                     },
                     "position": {
                         "description": "Must be calculated Channel.calculatePosition",
@@ -9502,6 +9526,36 @@
                     "user_id"
                 ]
             },
+            "threadMetadata": {
+                "type": "object",
+                "properties": {
+                    "archived": {
+                        "type": "boolean"
+                    },
+                    "auto_archive_duration": {
+                        "type": "integer"
+                    },
+                    "archive_timestamp": {
+                        "type": "string"
+                    },
+                    "locked": {
+                        "type": "boolean"
+                    },
+                    "invitable": {
+                        "type": "boolean"
+                    },
+                    "create_timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "archive_timestamp",
+                    "archived",
+                    "auto_archive_duration",
+                    "create_timestamp",
+                    "locked"
+                ]
+            },
             "Attachment": {
                 "type": "object",
                 "properties": {
@@ -9694,6 +9748,23 @@
                     "count",
                     "emoji",
                     "user_ids"
+                ]
+            },
+            "PartialEmoji": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "animated": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "name"
                 ]
             },
             "MessageType": {
@@ -11210,6 +11281,127 @@
                     "ranked_sku_ids",
                     "sorted_sku_ids",
                     "type"
+                ]
+            },
+            "PartialMessage": {
+                "description": "https://docs.discord.food/resources/message#partial-message-structure",
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "A Twitter-like snowflake, except the epoch is 2015-01-01T00:00:00.000Z\n```\nIf we have a snowflake '266241948824764416' we can represent it as binary:\n\n64                                          22     17     12          0\n 000000111011000111100001101001000101000000  00001  00000  000000000000\n      number of ms since Discord epoch       worker  pid    increment\n```",
+                        "type": "string"
+                    },
+                    "channel_id": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/MessageType"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "author": {
+                        "$ref": "#/components/schemas/PartialUser"
+                    },
+                    "flags": {
+                        "type": "integer"
+                    },
+                    "application_id": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "author",
+                    "channel_id",
+                    "content",
+                    "id",
+                    "type"
+                ]
+            },
+            "PartialUser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "A Twitter-like snowflake, except the epoch is 2015-01-01T00:00:00.000Z\n```\nIf we have a snowflake '266241948824764416' we can represent it as binary:\n\n64                                          22     17     12          0\n 000000111011000111100001101001000101000000  00001  00000  000000000000\n      number of ms since Discord epoch       worker  pid    increment\n```",
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "discriminator": {
+                        "type": "string"
+                    },
+                    "global_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "avatar": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "avatar_decoration_data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/AvatarDecorationData"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "collectibles": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Collectibles"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "display_name_styles": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/DisplayNameStyle"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "primary_guild": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/PrimaryGuild"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "bot": {
+                        "type": "boolean"
+                    },
+                    "system": {
+                        "type": "boolean"
+                    },
+                    "banner": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "accent_color": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "public_flags": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "avatar",
+                    "discriminator",
+                    "id",
+                    "username"
                 ]
             },
             "AvatarDecorationData": {
@@ -18931,6 +19123,42 @@
                 ]
             }
         },
+        "/guilds/{guild_id}/force-recount/": {
+            "post": {
+                "x-right-required": "MANAGE_GUILDS",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIGuild"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "guild_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "guild_id"
+                    }
+                ],
+                "tags": [
+                    "guilds"
+                ]
+            }
+        },
         "/guilds/{guild_id}/emojis/": {
             "get": {
                 "security": [
@@ -21182,6 +21410,61 @@
                 ]
             }
         },
+        "/channels/{channel_id}/messages/search/": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GuildMessagesSearchResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "channel_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "channel_id"
+                    }
+                ],
+                "tags": [
+                    "channels"
+                ]
+            }
+        },
         "/channels/{channel_id}/messages/pins/{message_id}": {
             "put": {
                 "x-permission-required": "VIEW_CHANNEL",
@@ -22886,6 +23169,74 @@
                 ]
             }
         },
+        "/auth/passwordless/start/": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorOrCaptchaResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            }
+        },
+        "/auth/passwordless/finish/": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebAuthnSSOSchema"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "auth"
+                ]
+            }
+        },
         "/auth/mfa/webauthn/": {
             "post": {
                 "requestBody": {
@@ -23154,6 +23505,50 @@
                         "label": "Spacebar-only",
                         "color": "red"
                     }
+                ]
+            }
+        },
+        "/auth/conditional/finish/": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebAuthnSSOSchema"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "auth"
                 ]
             }
         },
