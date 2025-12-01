@@ -136,6 +136,8 @@ router.get(
 				"referenced_message.sticker_items",
 				"referenced_message.attachments",
 				"thread",
+				"thread.recipients",
+				"thread.recipients.user",
 			],
 		};
 
@@ -245,6 +247,7 @@ router.get(
 
 			return x;
 		});
+		//console.log(ret);
 
 		await Promise.all(
 			ret
@@ -406,8 +409,6 @@ router.post(
 		//@ts-ignore dont care2
 		message.edited_timestamp = null;
 
-		channel.last_message_id = message.id;
-
 		if (channel.isDm()) {
 			const channel_dto = await DmChannelDTO.from(channel);
 
@@ -516,7 +517,6 @@ router.post(
 				data: message,
 			} as MessageCreateEvent),
 			message.guild_id ? Member.update({ id: req.user_id, guild_id: message.guild_id }, { last_message_id: message.id }) : null,
-			channel.save(),
 		]);
 
 		// no await as it shouldnt block the message send function and silently catch error
