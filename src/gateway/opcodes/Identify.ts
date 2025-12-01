@@ -53,9 +53,9 @@ import {
 	UserSettingsProtos,
 } from "@spacebar/util";
 import { check } from "./instanceOf";
-import { In } from "typeorm";
+import { In, Not } from "typeorm";
 import { PreloadedUserSettings } from "discord-protos";
-import { DefaultUserGuildSettings, DMChannel, IdentifySchema, PrivateUserProjection, PublicUser, PublicUserProjection } from "@spacebar/schemas";
+import { DefaultUserGuildSettings, DMChannel, IdentifySchema, PrivateUserProjection, PublicUser, PublicUserProjection, ChannelType } from "@spacebar/schemas";
 
 // TODO: user sharding
 // TODO: check privileged intents, if defined in the config
@@ -266,7 +266,10 @@ export async function onIdentify(this: WebSocket, data: Payload) {
 		),
 		timePromise(() =>
 			Channel.find({
-				where: { guild_id: In(guildIds) },
+				where: {
+					guild_id: In(guildIds),
+					type: Not(ChannelType.GUILD_PUBLIC_THREAD),
+				},
 				order: { guild_id: "ASC" },
 			}),
 		),

@@ -135,6 +135,7 @@ router.get(
 				"referenced_message.mention_channels",
 				"referenced_message.sticker_items",
 				"referenced_message.attachments",
+				"thread",
 			],
 		};
 
