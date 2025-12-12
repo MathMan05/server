@@ -42,6 +42,7 @@ import {
 	uploadFile,
 	User,
 	stringGlobToRegexp,
+	Recipient,
 } from "@spacebar/util";
 import { Request, Response, Router } from "express";
 import { HTTPError } from "lambert-server";
@@ -58,6 +59,7 @@ import {
 	MessageCreateSchema,
 	Reaction,
 	RelationshipType,
+	ChannelType,
 } from "@spacebar/schemas";
 
 const router: Router = Router({ mergeParams: true });
@@ -521,6 +523,16 @@ router.post(
 
 		// no await as it shouldnt block the message send function and silently catch error
 		postHandleMessage(message).catch((e) => console.error("[Message] post-message handler failed", e));
+		if (channel.type === ChannelType.GUILD_PUBLIC_THREAD && channel.recipients && !channel.recipients.find((_) => _.user.id === req.user_id)) {
+			const rec = Recipient.create({
+				channel_id: channel.id,
+				user_id: req.user_id,
+			});
+			channel.recipients.push(rec);
+			rec.save().then(() => {
+				channel.save();
+			});
+		}
 
 		return res.json(
 			message.withSignedAttachments(
