@@ -245,7 +245,12 @@ async function consume(this: WebSocket, opts: EventOpts) {
             this.events[data.user.id] = await listenEvent(data.user.id, handlePresenceUpdate.bind(this), this.listen_options);
             break;
         case "GUILD_CREATE":
-            this.events[id] = await listenEvent(id, consumer, listenOpts);
+            Promise.all([
+                ...data.channels.map(async ({ id }: { id: string }) => {
+                    this.events[id] = await listenEvent(id, consumer, listenOpts);
+                }),
+                listenEvent(id, consumer, listenOpts).then((ret) => (this.events[id] = ret)),
+            ]);
             break;
         case "CHANNEL_UPDATE": {
             const exists = this.events[id];
