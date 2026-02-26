@@ -36,6 +36,7 @@ builder.Services.AddScoped<SpacebarAspNetAuthenticationService>();
 // builder.Services.AddSingleton<RabbitMQConfiguration>();
 // builder.Services.AddSingleton<RabbitMQService>();
 // builder.Services.AddSingleton<ISpacebarReplication, RabbitMqSpacebarReplication>();
+builder.Services.AddSingleton<UnixSocketConfiguration>();
 builder.Services.AddSingleton<ISpacebarReplication, UnixSocketSpacebarReplication>();
 
 builder.Services.AddRequestTimeouts(x => {
@@ -59,7 +60,7 @@ builder.Services.AddRequestTimeouts(x => {
 var app = builder.Build();
 app.Use((context, next) => {
     context.Response.Headers["Access-Control-Allow-Origin"] = "*";
-    context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH";
     context.Response.Headers["Access-Control-Allow-Headers"] = "*, Authorization";
     if (context.Request.Method == "OPTIONS") {
         context.Response.StatusCode = 200;

@@ -2,8 +2,13 @@
   description = "Spacebar server, written in Typescript.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/master"; # temp hack because unstable is frozen
     flake-utils.url = "github:numtide/flake-utils";
+    pion-webrtc = {
+      url = "github:spacebarchat/pion-webrtc";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
   outputs =
@@ -11,6 +16,7 @@
       self,
       nixpkgs,
       flake-utils,
+      pion-webrtc
     }:
     nixpkgs.lib.recursiveUpdate
       (
@@ -34,6 +40,8 @@
           {
             packages = {
               default = (pkgs.callPackage (import ./default.nix { inherit self rVersion; })) { };
+              nodeModules = (pkgs.callPackage ./node-modules.nix) { };
+              pion-sfu = pion-webrtc.packages.${system}.default;
             };
 
             containers = {
@@ -41,29 +49,39 @@
                 default = pkgs.dockerTools.buildLayeredImage {
                   name = "spacebar-server-ts";
                   tag = builtins.replaceStrings [ "+" ] [ "_" ] self.packages.${system}.default.version;
-                  contents = [ self.packages.${system}.default ];
+                  contents = [
+                    self.packages.${system}.default
+                    pkgs.dockerTools.binSh
+                    pkgs.dockerTools.usrBinEnv
+                    pkgs.dockerTools.caCertificates
+                  ];
                   config = {
                     Cmd = [ "${self.outputs.packages.${system}.default}/bin/start-bundle" ];
-                    Env = {
-                      PORT = "3001";
-                    };
+                    WorkingDir = "/data";
+                    Env = [
+                      "PORT=3001"
+                    ];
                     Expose = [ "3001" ];
                   };
                 };
               }
-              // lib.genAttrs [ "api" "cdn" "gateway" ] (
+              // lib.genAttrs [ "api" "cdn" "gateway" "webrtc" ] (
                 mod:
                 pkgs.dockerTools.buildLayeredImage {
                   name = "spacebar-server-ts-${mod}";
                   tag = builtins.replaceStrings [ "+" ] [ "_" ] self.packages.${system}.default.version;
                   contents = [
                     self.packages.${system}.default
+                    pkgs.dockerTools.binSh
+                    pkgs.dockerTools.usrBinEnv
+                    pkgs.dockerTools.caCertificates
                   ];
                   config = {
                     Cmd = [ "${self.outputs.packages.${system}.default}/bin/start-${mod}" ];
-                    Env = {
-                      PORT = "3001";
-                    };
+                    WorkingDir = "/data";
+                    Env = [
+                      "PORT=3001"
+                    ];
                     Expose = [ "3001" ];
                   };
                 }

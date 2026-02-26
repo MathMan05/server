@@ -57,6 +57,7 @@ flake-utils.lib.eachSystem flake-utils.lib.allSystems (
           homepage = "https://github.com/spacebarchat/server";
           license = licenses.agpl3Plus;
           maintainers = with maintainers; [ RorySys ];
+          mainProgram = name;
         };
       };
   in
@@ -142,7 +143,7 @@ flake-utils.lib.eachSystem flake-utils.lib.allSystems (
         Spacebar-Models-Gateway = makeNupkg {
           name = "Spacebar.Models.Gateway";
           projectFile = "Spacebar.Models.Gateway.csproj";
-          # nugetDeps = Models/Spacebar.Models.Gateway/deps.json;
+          nugetDeps = Models/Spacebar.Models.Gateway/deps.json;
           srcRoot = Models/Spacebar.Models.Gateway;
           projectReferences = [ proj.Spacebar-Models-Generic ];
         };
@@ -218,6 +219,24 @@ flake-utils.lib.eachSystem flake-utils.lib.allSystems (
             proj.Spacebar-Models-Generic
           ];
         };
+        Spacebar-UApi = makeNupkg {
+          name = "Spacebar.UApi";
+          nugetDeps = Spacebar.UApi/deps.json;
+          projectFile = "Spacebar.UApi.csproj";
+          srcRoot = ./Spacebar.UApi;
+          packNupkg = false;
+          projectReferences = [
+            proj.Spacebar-DataMappings-Generic
+            proj.Spacebar-Interop-Authentication
+            proj.Spacebar-Interop-Authentication-AspNetCore
+            proj.Spacebar-Interop-Replication-Abstractions
+            proj.Spacebar-Interop-Replication-UnixSocket
+            proj.Spacebar-Models-Config
+            proj.Spacebar-Models-Db
+            proj.Spacebar-Models-Gateway
+            proj.Spacebar-Models-Generic
+          ];
+        };
         #            Spacebar-AdminApi-TestClient = makeNupkg {
         #              name = "Spacebar.AdminApi.TestClient";
         #              projectFile = "Utilities/Spacebar.AdminApi.TestClient/Spacebar.AdminApi.TestClient.csproj";
@@ -249,6 +268,15 @@ flake-utils.lib.eachSystem flake-utils.lib.allSystems (
       };
     };
     containers.docker.cdn-cs = pkgs.dockerTools.buildLayeredImage {
+      name = "spacebar-server-ts-cdn-cs";
+      tag = builtins.replaceStrings [ "+" ] [ "_" ] self.packages.${system}.Spacebar-AdminApi.version;
+      contents = [ self.packages.${system}.Spacebar-AdminApi ];
+      config = {
+        Cmd = [ "${lib.getExe self.outputs.packages.${system}.Spacebar-AdminApi}" ];
+        Expose = [ "5000" ];
+      };
+    };
+    containers.docker.uapi = pkgs.dockerTools.buildLayeredImage {
       name = "spacebar-server-ts-cdn-cs";
       tag = builtins.replaceStrings [ "+" ] [ "_" ] self.packages.${system}.Spacebar-AdminApi.version;
       contents = [ self.packages.${system}.Spacebar-AdminApi ];

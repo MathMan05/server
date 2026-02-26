@@ -52,20 +52,23 @@ import {
 } from "@spacebar/util";
 import { HTTPError } from "lambert-server";
 import { In, Or, Equal, IsNull } from "typeorm";
+
 import {
-    ActionRowComponent,
-    ButtonStyle,
     ChannelType,
     Embed,
     EmbedType,
-    MessageComponentType,
     MessageCreateAttachment,
     MessageCreateCloudAttachment,
     MessageCreateSchema,
     MessageType,
     Reaction,
+    ReadStateType,
+    MessageComponentType,
+    ButtonStyle,
+    ActionRowComponent,
     UnfurledMediaItem,
 } from "@spacebar/schemas";
+
 const allow_empty = false;
 // TODO: check webhook, application, system author, stickers
 // TODO: embed gifs/videos/images
@@ -204,7 +207,7 @@ export async function handleMessage(opts: MessageOptions): Promise<Message> {
             if (accessory.type === MessageComponentType.Thumbnail) {
                 medias.push(accessory.media);
             }
-        } else if (comp.type === MessageComponentType.TextDispaly) {
+        } else if (comp.type === MessageComponentType.TextDisplay) {
             if (!compv2) throw new HTTPError("Must be comp v2");
         } else if (comp.type === MessageComponentType.MediaGallery) {
             if (!compv2) throw new HTTPError("Must be comp v2");
@@ -218,14 +221,14 @@ export async function handleMessage(opts: MessageOptions): Promise<Message> {
         } else if (comp.type === MessageComponentType.File) {
             if (!compv2) throw new HTTPError("Must be comp v2");
             medias.push(comp.file);
-        } else if (comp.type === MessageComponentType.Seperator) {
+        } else if (comp.type === MessageComponentType.Separator) {
             if (!compv2) throw new HTTPError("Must be comp v2");
         } else if (comp.type === MessageComponentType.Container) {
             if (!compv2) throw new HTTPError("Must be comp v2");
             for (const elm of comp.components) {
                 switch (elm.type) {
-                    case MessageComponentType.Seperator:
-                    case MessageComponentType.TextDispaly:
+                    case MessageComponentType.Separator:
+                    case MessageComponentType.TextDisplay:
                         break;
                     case MessageComponentType.Section: {
                         const accessory = elm.accessory;
@@ -389,6 +392,14 @@ export async function handleMessage(opts: MessageOptions): Promise<Message> {
         throw new HTTPError("Content length over max character limit");
     }
 
+    if (opts.author_id) {
+        message.author = await User.findOneOrFail({
+            where: { id: opts.author_id },
+        });
+        message.author.clean_data();
+        const rights = await getRights(opts.author_id);
+        rights.hasThrow("SEND_MESSAGES");
+    }
     if (opts.application_id) {
         message.application = await Application.findOneOrFail({
             where: { id: opts.application_id },
@@ -659,7 +670,7 @@ export async function handleMessage(opts: MessageOptions): Promise<Message> {
             await fillInMissingIDs((await Member.find({ where: { guild_id: channel.guild_id } })).map(({ id }) => id));
         }
         const repository = ReadState.getRepository();
-        const condition = { channel_id: channel.id };
+        const condition = { channel_id: channel.id, read_state_type: ReadStateType.CHANNEL };
         await repository.update({ ...condition, mention_count: IsNull() }, { mention_count: 0 });
         await repository.increment(condition, "mention_count", 1);
     } else {
@@ -682,14 +693,59 @@ export async function handleMessage(opts: MessageOptions): Promise<Message> {
         }
         if (users.size) {
             const repository = ReadState.getRepository();
-            const condition = { user_id: Or(...[...users].map((id) => Equal(id))), channel_id: channel.id };
+            const condition = { user_id: Or(...[...users].map((id) => Equal(id))), channel_id: channel.id, read_state_type: ReadStateType.CHANNEL };
 
             await fillInMissingIDs([...users]);
-
-            await repository.update({ ...condition, mention_count: IsNull() }, { mention_count: 0 });
             await repository.increment(condition, "mention_count", 1);
         }
     }
+
+    const attachmentIndices = new Map(
+        message.attachments?.map((attachment, index) => {
+            return [`attachment://${attachment.filename}`, index];
+        }),
+    );
+    const attachmentsToRemove = new Set<number>();
+    function fetchAttachment(url: string | undefined): Attachment | undefined {
+        if (url == undefined) {
+            return undefined;
+        }
+        const index = attachmentIndices.get(url);
+        if (index === undefined) {
+            return undefined;
+        }
+        const attachment = message.attachments?.[index];
+        if (attachment === undefined) {
+            return undefined;
+        }
+        attachmentsToRemove.add(index);
+        return attachment;
+    }
+    for (const embed of message.embeds) {
+        const footer = embed.footer;
+        const footerAttachment = fetchAttachment(footer?.icon_url);
+        if (footerAttachment !== undefined) {
+            footer!.icon_url = footerAttachment.url;
+            footer!.proxy_icon_url = footerAttachment.proxy_url;
+        }
+
+        const image = embed.image;
+        const imageAttachment = fetchAttachment(image?.url);
+        if (imageAttachment !== undefined) {
+            image!.url = imageAttachment.url;
+            image!.proxy_url = imageAttachment.proxy_url;
+        }
+
+        const author = embed.author;
+        const authorAttachment = fetchAttachment(author?.icon_url);
+        if (authorAttachment !== undefined) {
+            author!.icon_url = authorAttachment.url;
+            author!.proxy_icon_url = authorAttachment.proxy_url;
+        }
+    }
+    message.attachments = message.attachments?.filter((_, index) => {
+        return !attachmentsToRemove.has(index);
+    });
 
     // TODO: check and put it all in the body
 
@@ -701,7 +757,7 @@ export async function postHandleMessage(message: Message) {
     const content = message.content?.replace(/ *`[^)]*` */g, ""); // remove markdown
 
     const linkMatches = content?.match(LINK_REGEX) || [];
-
+    message.clean_data();
     const data = { ...message };
 
     const currentNormalizedUrls = new Set<string>();
@@ -717,14 +773,17 @@ export async function postHandleMessage(message: Message) {
             continue;
         }
     }
-
-    data.embeds.forEach((embed) => {
-        if (!embed.type) {
-            embed.type = EmbedType.rich;
-        }
-    });
+    if (data.embeds != undefined) {
+        data.embeds?.forEach((embed) => {
+            if (!embed.type) {
+                embed.type = EmbedType.rich;
+            }
+        });
+    }
     // Filter out embeds that could be links, start from scratch
-    data.embeds = data.embeds.filter((embed) => embed.type === "rich");
+    if (data.embeds != undefined) {
+        data.embeds = data.embeds?.filter((embed) => embed.type === "rich");
+    }
 
     const seenNormalizedUrls = new Set<string>();
     const uniqueLinks: string[] = [];
@@ -749,7 +808,9 @@ export async function postHandleMessage(message: Message) {
 
     if (uniqueLinks.length === 0) {
         // No valid unique links found, update message to remove old embeds
-        data.embeds = data.embeds.filter((embed) => embed.type === "rich");
+        if (data.embeds != undefined) {
+            data.embeds = data.embeds?.filter((embed) => embed.type === "rich");
+        }
         const author = data.author?.toPublicUser();
         const event = {
             event: "MESSAGE_UPDATE",
@@ -759,7 +820,8 @@ export async function postHandleMessage(message: Message) {
                 author,
             },
         } as MessageUpdateEvent;
-        await Promise.all([emitEvent(event), Message.update({ id: message.id, channel_id: message.channel_id }, { embeds: data.embeds })]);
+        const embeds = data.embeds == undefined ? [] : data.embeds;
+        await Promise.all([emitEvent(event), Message.update({ id: message.id, channel_id: message.channel_id }, { embeds: embeds })]);
         return;
     }
 
@@ -782,7 +844,10 @@ export async function postHandleMessage(message: Message) {
         });
 
         if (cached) {
-            data.embeds.push(cached.embed);
+            if (data.embeds == undefined) {
+                data.embeds = [];
+            }
+            data.embeds?.push(cached.embed);
             continue;
         }
 
@@ -803,20 +868,23 @@ export async function postHandleMessage(message: Message) {
                     embed: embed,
                 });
                 cachePromises.push(cache.save());
-                data.embeds.push(embed);
+                if (data.embeds == undefined) {
+                    data.embeds = [];
+                }
+                data.embeds?.push(embed);
             }
         } catch (e) {
             console.error(`[Embeds] Error while generating embed for ${link}`, e);
         }
     }
-
+    const embeds = data.embeds == undefined ? [] : data.embeds;
     await Promise.all([
         emitEvent({
             event: "MESSAGE_UPDATE",
             channel_id: message.channel_id,
             data,
         } as MessageUpdateEvent),
-        Message.update({ id: message.id, channel_id: message.channel_id }, { embeds: data.embeds }),
+        Message.update({ id: message.id, channel_id: message.channel_id }, { embeds: embeds }),
         ...cachePromises,
     ]);
 }
@@ -848,7 +916,7 @@ interface MessageOptions extends MessageCreateSchema {
     author_id?: string;
     webhook_id?: string;
     application_id?: string;
-    embeds?: Embed[];
+    embeds?: Embed[] | null;
     reactions?: Reaction[];
     channel_id?: string;
     attachments?: (MessageCreateAttachment | MessageCreateCloudAttachment | Attachment)[]; // why are we masking this?

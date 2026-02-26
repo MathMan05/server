@@ -50,7 +50,7 @@ export interface UnfurledMediaItem {
     attachment_id?: string;
 }
 export interface TextDispalyComponent extends MessageComponent {
-    type: MessageComponentType.TextDispaly;
+    type: MessageComponentType.TextDisplay;
     content: string;
 }
 export interface MediaGalleryComponent extends MessageComponent {
@@ -74,7 +74,7 @@ export const enum SeperatorSpacing {
     Large = 2,
 }
 export interface SeperatorComponent extends MessageComponent {
-    type: MessageComponentType.Seperator;
+    type: MessageComponentType.Separator;
     divider?: boolean;
     spacing?: SeperatorSpacing;
 }
@@ -165,7 +165,6 @@ export enum TextInputStyle {
 }
 
 export enum MessageComponentType {
-    Script = 0, // self command script
     ActionRow = 1,
     Button = 2,
     StringSelect = 3,
@@ -175,10 +174,19 @@ export enum MessageComponentType {
     MentionableSelect = 7,
     ChannelSelect = 8,
     Section = 9,
-    TextDispaly = 10,
+
+    TextDisplay = 10,
     Thumbnail = 11,
     MediaGallery = 12,
     File = 13,
-    Seperator = 14,
-    Container = 15,
+    Separator = 14,
+    // 15 is unknown?
+    ContentInventoryEntry = 16, // activity feed entry
+    Container = 17,
+    Label = 18,
+    FileUpload = 19,
+    CheckpointCard = 20, // year in review 2026
+    RadioGroup = 21,
+    CheckboxGroup = 22,
+    Checkbox = 23,
 }

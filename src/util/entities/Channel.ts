@@ -95,8 +95,8 @@ export class Channel extends BaseClass {
     @ManyToOne(() => User)
     owner: User;
 
-    @Column({ nullable: true })
-    last_pin_timestamp?: number;
+    @Column({ nullable: true, type: "timestamp with time zone" })
+    last_pin_timestamp?: Date | null; // ISO8601
 
     @Column({ nullable: true })
     default_auto_archive_duration?: number;
@@ -218,7 +218,10 @@ export class Channel extends BaseClass {
                 for (const character of InvisibleCharacters) if (channel.name.includes(character)) throw new HTTPError("Channel name cannot include invalid characters", 403);
 
                 // Categories skip these checks on discord.com
-                if (channel.type !== ChannelType.GUILD_CATEGORY || guild.features.includes("IRC_LIKE_CATEGORY_NAMES")) {
+                if (
+                    (channel.type !== ChannelType.GUILD_CATEGORY && channel.type !== ChannelType.GUILD_STAGE_VOICE && channel.type !== ChannelType.GUILD_VOICE) ||
+                    guild.features.includes("IRC_LIKE_CATEGORY_NAMES")
+                ) {
                     if (channel.name.includes(" ")) throw new HTTPError("Channel name cannot include invalid characters", 403);
 
                     if (channel.name.match(/--+/g)) throw new HTTPError("Channel name cannot include multiple adjacent dashes.", 403);

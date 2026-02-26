@@ -29,6 +29,7 @@ import { Message } from "./Message";
 import { Role } from "./Role";
 import { User } from "./User";
 import { AvatarDecorationData, Collectibles, DisplayNameStyle, PrimaryGuild, PublicMember, PublicMemberProjection, UserGuildSettings } from "@spacebar/schemas";
+import { JsonNumber } from "../util/Decorators";
 
 export const MemberPrivateProjection: (keyof Member)[] = [
     "id",
