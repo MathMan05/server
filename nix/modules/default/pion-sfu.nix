@@ -55,6 +55,7 @@ in
 
       systemd.services.spacebar-webrtc = makeServerTsService {
         description = "Spacebar Server - WebRTC";
+        requires = [ "spacebar-sfu.service" ];
         environment = builtins.mapAttrs (_: val: builtins.toString val) (
           {
             # things we set by default...

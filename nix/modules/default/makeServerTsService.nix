@@ -34,6 +34,7 @@ lib.recursiveUpdate
         "AF_INET"
         "AF_INET6"
         "AF_UNIX"
+        "AF_NETLINK"
       ];
       RestrictNamespaces = true;
       RestrictRealtime = true;
@@ -74,6 +75,7 @@ lib.recursiveUpdate
       StateDirectoryMode = "0750";
       RuntimeDirectory = "spacebar";
       RuntimeDirectoryMode = "0750";
+      RuntimeDirectoryPreserve = "yes";
       ReadWritePaths = [ cfg.cdnPath ];
       NoExecPaths = [ cfg.cdnPath ];
 

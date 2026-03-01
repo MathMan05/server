@@ -18,6 +18,7 @@ in
     ./integration-nginx.nix
     ./users.nix
     (import ./pion-sfu.nix self)
+    (import ./cs/cdn-cs.nix self)
     (import ./cs/gateway-offload-cs.nix self)
     (import ./cs/admin-api.nix self)
     (import ./cs/uapi.nix self)
@@ -28,8 +29,6 @@ in
     in
     {
       enable = lib.mkEnableOption "Spacebar server";
-      enableAdminApi = lib.mkEnableOption "Spacebar server Admin API";
-      enableCdnCs = lib.mkEnableOption "Spacebar's experimental CDN rewrite";
       package = lib.mkPackageOption self.packages.${pkgs.stdenv.hostPlatform.system} "spacebar-server" { default = "default"; };
       databaseFile = lib.mkOption {
         type = lib.types.nullOr lib.types.path;
@@ -129,6 +128,7 @@ in
 
       systemd.services.spacebar-gateway = makeServerTsService {
         description = "Spacebar Server - Gateway";
+        # after = [ "spacebar-api.service" ];
         environment = builtins.mapAttrs (_: val: builtins.toString val) (
           {
             # things we set by default...
@@ -150,7 +150,7 @@ in
         };
       };
 
-      systemd.services.spacebar-cdn = lib.mkIf (!cfg.enableCdnCs) (makeServerTsService {
+      systemd.services.spacebar-cdn = lib.mkIf (!cfg.cdnCs.enable) (makeServerTsService {
         description = "Spacebar Server - CDN";
         environment = builtins.mapAttrs (_: val: builtins.toString val) (
           {

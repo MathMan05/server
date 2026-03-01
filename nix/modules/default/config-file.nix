@@ -25,7 +25,7 @@ let
     };
   }
   // (
-    if cfg.enableAdminApi then
+    if cfg.adminApi.enable then
       {
         adminApi = {
           endpointPublic = "http${if cfg.adminApiEndpoint.useSsl then "s" else ""}://${cfg.adminApiEndpoint.host}:${toString cfg.adminApiEndpoint.publicPort}";
