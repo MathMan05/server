@@ -156,6 +156,9 @@ export class Member extends BaseClassWithoutId {
     @Column({ type: "simple-json", nullable: true })
     collectibles?: Collectibles;
 
+    @Column({ type: "int", default: 0 })
+    flags: number = 0;
+
     @BeforeUpdate()
     @BeforeInsert()
     validate() {
