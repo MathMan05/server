@@ -1,5 +1,5 @@
 import { handleMessage, postHandleMessage } from "@spacebar/api";
-import { Attachment, Config, DiscordApiErrors, emitEvent, FieldErrors, Message, MessageCreateEvent, uploadFile, ValidateName, Webhook } from "@spacebar/util";
+import { Attachment, Channel, Config, DiscordApiErrors, emitEvent, FieldErrors, Message, MessageCreateEvent, uploadFile, ValidateName, Webhook } from "@spacebar/util";
 import { Request, Response } from "express";
 import { HTTPError } from "lambert-server";
 import { MoreThan } from "typeorm";
@@ -35,7 +35,7 @@ export const executeWebhook = async (req: Request, res: Response) => {
     }
 
     const wait = req.query.wait === "true";
-
+    const thread_id = typeof req.query.thread_id === "string" ? req.query.thread_id : undefined;
     if (!wait) {
         res.status(204).send();
     }
@@ -73,10 +73,20 @@ export const executeWebhook = async (req: Request, res: Response) => {
             }
     }
 
+    let sendChannel = webhook.channel;
+    if (thread_id) {
+        sendChannel = await Channel.findOneOrFail({
+            where: {
+                id: thread_id,
+                parent_id: webhook.channel.id,
+            },
+        });
+    }
+
     const files = (req.files as Express.Multer.File[]) ?? [];
     for (const currFile of files) {
         try {
-            const file = await uploadFile(`/attachments/${webhook.channel.id}`, currFile);
+            const file = await uploadFile(`/attachments/${sendChannel.id}`, currFile);
             attachments.push(Attachment.create({ ...file, proxy_url: file.url }));
         } catch (error) {
             if (wait) res.status(400).json({ message: error?.toString() });
@@ -95,7 +105,7 @@ export const executeWebhook = async (req: Request, res: Response) => {
         application_id: webhook.application?.id,
         embeds,
         // TODO: Support thread_id/thread_name once threads are implemented
-        channel_id: webhook.channel_id,
+        channel_id: sendChannel.id,
         attachments,
         timestamp: new Date(),
     });
@@ -104,11 +114,11 @@ export const executeWebhook = async (req: Request, res: Response) => {
     //@ts-ignore dont care2
     message.edited_timestamp = null;
 
-    webhook.channel.last_message_id = message.id;
+    sendChannel.last_message_id = message.id;
 
     await Promise.all([
         message.save(),
-        webhook.channel.save(),
+        sendChannel.save(),
         emitEvent({
             event: "MESSAGE_CREATE",
             channel_id: webhook.channel_id,
