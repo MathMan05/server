@@ -47,7 +47,7 @@ export interface MessageCreateSchema {
         roles?: string[] | null;
         users?: string[] | null;
         replied_user?: boolean;
-    };
+    } | null;
     message_reference?: {
         message_id?: string;
         channel_id?: string;
