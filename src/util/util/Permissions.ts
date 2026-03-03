@@ -162,12 +162,19 @@ export class Permissions extends BitField {
 		let permission = Permissions.rolePermission(roles);
 
 		if (channel?.overwrites) {
+			let memberPerm = undefined as ChannelPermissionOverwrite | undefined;
 			const overwrites = channel.overwrites.filter((x) => {
 				if (x.type === ChannelPermissionOverwriteType.role && user.roles.includes(x.id)) return true;
-				if (x.type === ChannelPermissionOverwriteType.member && x.id == user.id) return true;
+				if (x.type === ChannelPermissionOverwriteType.member && x.id == user.id) {
+					memberPerm = x;
+				}
 				return false;
 			});
 			permission = Permissions.channelPermission(overwrites, permission);
+			if (memberPerm) {
+				permission &= ~BigInt(memberPerm.deny);
+				permission |= BigInt(memberPerm.allow);
+			}
 		}
 
 		if (channel?.recipient_ids) {
