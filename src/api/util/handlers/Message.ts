@@ -782,7 +782,6 @@ export async function postHandleMessage(message: Message) {
     const linkMatches = content?.match(LINK_REGEX) || [];
     message.clean_data();
     const data = { ...message.toJSON() };
-    console.log(message);
 
     const currentNormalizedUrls = new Set<string>();
     for (const link of linkMatches) {
