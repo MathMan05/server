@@ -153,9 +153,8 @@ async function processMedia(media: UnfurledMediaItem, messageId: string, batchId
             },
         });
     }
-    const url2 = `${Config.get().cdn.endpointPrivate}/attachments/${attEnt.uploadFilename}/clone_to_message/${messageId}`;
 
-    const cloneResponse = await fetch(url2, {
+    const cloneResponse = await fetch(`${Config.get().cdn.endpointPrivate}/attachments/${attEnt.uploadFilename}/clone_to_message/${messageId}`, {
         method: "POST",
         headers: {
             signature: Config.get().security.requestSignature || "",
