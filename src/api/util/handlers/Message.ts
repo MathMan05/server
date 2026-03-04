@@ -349,6 +349,7 @@ export async function handleMessage(opts: MessageOptions): Promise<Message> {
             where: { id: opts.author_id },
         });
         const rights = await getRights(opts.author_id);
+        message.author.clean_data();
         rights.hasThrow("SEND_MESSAGES");
     }
 
@@ -414,14 +415,6 @@ export async function handleMessage(opts: MessageOptions): Promise<Message> {
         throw new HTTPError("Content length over max character limit");
     }
 
-    if (opts.author_id) {
-        message.author = await User.findOneOrFail({
-            where: { id: opts.author_id },
-        });
-        message.author.clean_data();
-        const rights = await getRights(opts.author_id);
-        rights.hasThrow("SEND_MESSAGES");
-    }
     if (opts.application_id) {
         message.application = await Application.findOneOrFail({
             where: { id: opts.application_id },
